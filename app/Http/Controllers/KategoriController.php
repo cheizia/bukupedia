@@ -9,12 +9,12 @@ class KategoriController extends Controller
 {
     public function index()
     {
-        $kategori = \App\Models\Kategori::all();
+        $kategori = Kategori::all();
         return response()->json([ 'message' => 'Data kategori berhasil diambil', 'data' => $kategori ], 200);
     }
     public function show($id)
     {
-        $kategori = \App\Models\Kategori::find($id);
+        $kategori = Kategori::find($id);
         if (!$kategori) {
             return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
         }
@@ -26,12 +26,12 @@ class KategoriController extends Controller
             'nama_kategori' => 'required|string|max:255',
         ]);
 
-        $kategori = \App\Models\Kategori::create($validatedData);
+        $kategori = Kategori::create($validatedData);
         return response()->json([ 'message' => 'Kategori berhasil dibuat', 'data' => $kategori ], 201);
     }
     public function update(Request $request, $id)
     {
-        $kategori = \App\Models\Kategori::find($id);
+        $kategori = Kategori::find($id);
         if (!$kategori) {
             return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
         }
@@ -45,7 +45,7 @@ class KategoriController extends Controller
     }
     public function destroy($id)
     {
-        $kategori = \App\Models\Kategori::find($id);
+        $kategori = Kategori::find($id);
         if (!$kategori) {
             return response()->json(['message' => 'Kategori tidak ditemukan'], 404);
         }
