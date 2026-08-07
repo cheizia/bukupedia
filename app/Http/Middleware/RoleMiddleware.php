@@ -13,8 +13,14 @@ class RoleMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
+        if (!$request->user()) {
+            return response()->json(['message' => 'Anda belum login'], 401);
+        }
+        if (!in_array($request->user()->role, $roles)){
+            return response()->json(['message' => 'Anda tidak memiliki akses'], 403);
+        }
         return $next($request);
     }
 }
