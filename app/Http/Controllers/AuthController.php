@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -13,15 +14,14 @@ class AuthController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,petugas,peminjam',
         ]);
 
-        $user = \App\Models\User::create([
+        $user = User::create([
             'user_id' => $validatedData['user_id'],
             'nama' => $validatedData['nama'],
             'email' => $validatedData['email'],
             'password' => bcrypt($validatedData['password']),
-            'role' => $validatedData['role']
+            'role' => 'anggota', // Default anggota
         ]);
 
         return response()->json(['message' => 'Registrasi berhasil', 'user' => $user], 201);
