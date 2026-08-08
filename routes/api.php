@@ -10,7 +10,8 @@ use App\Http\Controllers\PeminjamController;
 Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register']);
 Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) { return $request->user(); }); Route::post('/logout', [ AuthController::class, 'logout' ]);
+    Route::get('/user', function (Request $request) { return $request->user(); }); 
+    Route::post('/logout', [ AuthController::class, 'logout' ]);
     Route::get('/buku', [ BukuController::class, 'index' ]); 
     Route::get('/buku/{id}', [ BukuController::class, 'show' ]);
     Route::middleware('role:admin')->group(function () { 

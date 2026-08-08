@@ -3,100 +3,165 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use app\Models\Peminjam;
+use App\Models\Peminjam;
+use App\Models\Buku;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class PeminjamController extends Controller
 {
-    public function pinjam(Request $request, $id)
+    public function pinjam(Request $request)
     {
-        return DB::transaction(function () use ($request, $id) {
-            $peminjam = Peminjam::find($id);
-            if (!$peminjam) {
-                return response()->json(['message' => 'Peminjam tidak ditemukan'], 404);
-            }
-
-            $validatedData = $request->validate([
-                'tanggal_pinjam' => 'required|date',
-                'tanggal_jatuh_tempo' => 'required|date|after:tanggal_pinjam',
-                'status' => 'required|in:dipinjam,dikembalikan',
-            ]);
-
-            $buku = Buku::find($request->buku_id);
-            if ($buku->stok <= 0) { return response()->json([ 'message' => 'Stok buku habis' ], 409);}
-
-            $peminjam->update($validatedData);
-            return response()->json([ 'message' => 'Peminjam berhasil diperbarui', 'data' => $peminjam ], 200);
-        });
-
-        $jumlahPeminjam = Peminjam::where('status', 'dipinjam')->count();
-        if ($jumlahPeminjam >= 3) {
-            return response()->json(['message' => 'Jumlah peminjam melebihi batas'], 400);
-        }
-        $peminjam = Peminjam::create($validatedData);
-        return response()->json([ 'message' => 'Peminjam berhasil ditambahkan', 'data' => $peminjam ], 201);
-
-        $sudahDipinjam = Peminjam::where('user_id', $request->user_id)->where('status', 'dipinjam')->exists();
-        if ($sudahDipinjam) {
-            return response()->json(['message' => 'User ini sudah meminjam buku'], 400);
-        }
-        $peminjam = Peminjam::create($validatedData);
-        return response()->json([ 'message' => 'Peminjam berhasil ditambahkan', 'data' => $peminjam ], 201);
-
-        $tanggalPinjam = Carbon::parse($request->tanggal_pinjam);
-        $tanggalJatuhTempo = Carbon::parse($request->tanggal_jatuh_tempo);
-        if ($tanggalJatuhTempo->diffInDays($tanggalPinjam) > 7) {
-            return response()->json(['message' => 'Masa peminjaman tidak boleh lebih dari 7 hari'], 400);
-        }
-        $peminjam = Peminjam::create($validatedData);
-        return response()->json([ 'message' => 'Peminjam berhasil ditambahkan', 'data' => $peminjam ], 201);
-
-        $peminjaman = Peminjam::create([
-            'user_id' => $request->user_id,
-            'buku_id' => $request->buku_id,
-            'tanggal_pinjam' => $request->tanggal_pinjam,
-            'tanggal_jatuh_tempo' => $request->tanggal_jatuh_tempo,
-            'status' => 'dipinjam',
-            'denda' => 0,
+        $request->validate([
+            'buku_id' => 'required|exists:buku,id',
         ]);
 
-        $tanggal_kembali = Carbon::parse($request->tanggal_kembali);
-        if ($tanggal_kembali->gt($tanggal_jatuh_tempo)) {
-            $denda = $tanggal_kembali->diffInDays($tanggal_jatuh_tempo) * 2000; 
-            $peminjaman->update(['denda' => $denda]);
-        }
+        $user = $request->user();
 
-        $peminjaman->buku()->increment('stok');
-        return response()->json([ 'message' => 'Buku berhasil dikembalikan', 'data' => $peminjaman ], 200);
+        return DB::transaction(function () use ($request, $user) {
 
-        $terlambat = $tanggal_kembali->gt($tanggal_jatuh_tempo);
-        return response()->json([ 'message' => 'Buku berhasil dikembalikan', 'terlambat' => $terlambat, 'denda' => $denda, 'data' => $peminjaman->fresh()->load('buku') ], 200);
-    }
-    public function riwayat(Request $request)
-    {
-        $riwayat = Peminjam::with('buku')->get();
-        return response()->json([ 'message' => 'Data riwayat peminjaman berhasil diambil', 'data' => $riwayat ], 200);
-        if ($user -> role == 'anggota') {
-            ($query->where('user_id', $user->id));
-            $data = $query->orderBy('id', 'desc')->get();
-            return response()->json([ 'message' => 'Data riwayat peminjaman berhasil diambil', 'data' => $data ], 200);
-        }
-    }
-    public function kembali(Request $request, $id)
-    {
-        return DB::transaction(function () use ($request, $id) {
-            $peminjam = Peminjam::find($id);
-            if (!$peminjam) {
-                return response()->json(['message' => 'Peminjam tidak ditemukan'], 404);
+            $buku = Buku::where('id', $request->buku_id)
+                ->lockForUpdate()
+                ->first();
+
+            // Cek buku
+            if (!$buku) {
+                return response()->json([
+                    'message' => 'Buku tidak ditemukan'
+                ], 404);
             }
 
-            $validatedData = $request->validate([
-                'tanggal_kembali' => 'required|date|after_or_equal:tanggal_pinjam',
-                'status' => 'required|in:dipinjam,dikembalikan',
-                'denda' => 'nullable|numeric|min:0',
+            if ($buku->stok <= 0) {
+                return response()->json([
+                    'message' => 'Stok buku habis'
+                ], 409);
+            }
+
+            $jumlahPinjaman = Peminjam::where('user_id', $user->id)
+                ->where('status', 'dipinjam')
+                ->count();
+
+            if ($jumlahPinjaman >= 3) {
+                return response()->json([
+                    'message' => 'Maksimal peminjaman aktif adalah 3 buku'
+                ], 409);
+            }
+
+            $sudahDipinjam = Peminjam::where('user_id', $user->id)
+                ->where('buku_id', $buku->id)
+                ->where('status', 'dipinjam')
+                ->exists();
+
+            if ($sudahDipinjam) {
+                return response()->json([
+                    'message' => 'Buku ini masih Anda pinjam'
+                ], 409);
+            }
+
+            $tanggalPinjam = Carbon::today();
+            $tanggalJatuhTempo = Carbon::today()->addDays(7);
+
+            $peminjaman = Peminjam::create([
+                'user_id' => $user->id,
+                'buku_id' => $buku->id,
+                'tanggal_pinjam' => $tanggalPinjam,
+                'tanggal_jatuh_tempo' => $tanggalJatuhTempo,
+                'tanggal_kembali' => null,
+                'status' => 'dipinjam',
+                'denda' => 0,
             ]);
 
-            $peminjam->update($validatedData);
-            return response()->json([ 'message' => 'Peminjam berhasil diperbarui', 'data' => $peminjam ], 200);
+            $buku->decrement('stok');
+
+            return response()->json([
+                'message' => 'Buku berhasil dipinjam',
+                'data' => $peminjaman->load('buku')
+            ], 201);
+        });
+    }
+
+    public function riwayat(Request $request)
+    {
+        $user = $request->user();
+
+        $query = Peminjam::with([
+            'buku',
+            'user'
+        ]);
+
+        if ($user->role === 'anggota') {
+            $query->where('user_id', $user->id);
+        }
+
+        $data = $query
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return response()->json([
+            'message' => 'Data riwayat peminjaman berhasil diambil',
+            'data' => $data
+        ], 200);
+    }
+
+    public function kembali(Request $request, $id)
+    {
+        return DB::transaction(function () use ($id) {
+
+            $peminjaman = Peminjam::where('id', $id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$peminjaman) {
+                return response()->json([
+                    'message' => 'Data peminjaman tidak ditemukan'
+                ], 404);
+            }
+
+            if ($peminjaman->status === 'dikembalikan') {
+                return response()->json([
+                    'message' => 'Buku sudah dikembalikan sebelumnya'
+                ], 409);
+            }
+
+            if (!$peminjaman->buku) {
+                return response()->json([
+                    'message' => 'Buku tidak ditemukan'
+                ], 404);
+            }
+
+            $tanggalKembali = Carbon::today();
+
+            $tanggalJatuhTempo = Carbon::parse(
+                $peminjaman->tanggal_jatuh_tempo
+            );
+
+            $terlambat = 0;
+            $denda = 0;
+
+            if ($tanggalKembali->greaterThan($tanggalJatuhTempo)) {
+
+                $terlambat = (int) $tanggalJatuhTempo
+                    ->diffInDays($tanggalKembali);
+                $denda = $terlambat * 2000;
+            }
+
+            $peminjaman->update([
+                'tanggal_kembali' => $tanggalKembali,
+                'status' => 'dikembalikan',
+                'denda' => $denda,
+            ]);
+
+            $peminjaman->buku()
+                ->increment('stok');
+
+            return response()->json([
+                'message' => 'Buku berhasil dikembalikan',
+                'terlambat_hari' => $terlambat,
+                'denda' => $denda,
+                'data' => $peminjaman
+                    ->fresh()
+                    ->load('buku', 'user')
+            ], 200);
         });
     }
 }
