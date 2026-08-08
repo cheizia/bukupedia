@@ -1,59 +1,126 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Bukupedia
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Bukupedia adalah REST API sistem perpustakaan digital yang dibuat menggunakan Laravel, MySQL, dan Laravel Sanctum.
 
-## About Laravel
+## Fitur
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Register dan login
+- Role Admin, Petugas, Anggota
+- CRUD Buku
+- CRUD Kategori
+- Peminjaman buku
+- Pengembalian buku
+- Denda otomatis Rp2.000/hari
+- Maksimal 3 buku aktif
+- Stok otomatis berkurang/bertambah
+- Riwayat peminjaman
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Instalasi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Clone project:
 
-## Learning Laravel
+git clone <url-repository>
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Masuk ke folder:
+cd bukupedia
+Install dependency:
+composer install
+Copy environment:
+copy .env.example .env
+Generate key:
+php artisan key:generate
+Install API:
+php artisan install:api
+Jalankan migration:
+php artisan migrate
+Jalankan server:
+php artisan serve
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Konfigurasi Database
 
-## Laravel Sponsors
+Buat database:
+bukupedia
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Atur `.env`:
 
-### Premium Partners
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=bukupedia
+DB_USERNAME=root
+DB_PASSWORD=
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Endpoint Authentication
 
-## Contributing
+POST /api/register
+POST /api/login
+POST /api/logout
+GET /api/user
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Endpoint Buku
 
-## Code of Conduct
+GET /api/buku
+GET /api/buku/{id}
+POST /api/buku
+PUT /api/buku/{id}
+DELETE /api/buku/{id}
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Endpoint Kategori
 
-## Security Vulnerabilities
+GET /api/kategori
+GET /api/kategori/{id}
+POST /api/kategori
+PUT /api/kategori/{id}
+DELETE /api/kategori/{id}
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Endpoint Peminjaman
 
-## License
+POST /api/peminjaman/pinjam
+GET /api/peminjaman/riwayat
+PUT /api/peminjaman/{id}/kembali
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Hak Akses
+
+Admin:
+- CRUD Buku
+- CRUD Kategori
+- Melihat seluruh riwayat
+- Memproses pengembalian
+
+Petugas:
+- Melihat riwayat
+- Memproses pengembalian
+
+Anggota:
+- Melihat buku
+- Meminjam buku
+- Melihat riwayat sendiri
+
+## Business Logic
+
+- Buku hanya dapat dipinjam jika stok > 0
+- Maksimal 3 peminjaman aktif per anggota
+- Masa pinjam 7 hari
+- Denda Rp2.000 per hari keterlambatan
+- Stok berkurang saat buku dipinjam
+- Stok bertambah saat buku dikembalikan
+- Password disimpan dalam bentuk hash
+- Register otomatis mendapatkan role anggota
+
+## Authentication
+
+Gunakan Bearer Token dari hasil login:
+Authorization: Bearer TOKEN
+
+## Testing
+
+API dapat diuji menggunakan Postman.
+Base URL:
+http://127.0.0.1:8000/api
+
+## Version Control
+
+git init
+git add .
+git commit -m "initial project"
+Gunakan beberapa commit selama proses pengerjaan.
