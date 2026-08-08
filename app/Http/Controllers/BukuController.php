@@ -10,7 +10,7 @@ class BukuController extends Controller
 {
     public function index()
     {
-        $buku = Buku::all();
+        $buku = Buku::with('kategori')->get();
         return response()->json([ 'message' => 'Data buku berhasil diambil', 'data' => $buku ], 200);
     }
     public function show($id)
