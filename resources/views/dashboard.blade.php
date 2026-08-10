@@ -47,7 +47,7 @@
                         </p>
 
                         <a href="{{ url('/admin/kategori') }}"
-                           class="btn btn-primary">
+                           class="btn btn-success">
                             Kelola Kategori
                         </a>
                     </div>
@@ -62,7 +62,7 @@
                         </p>
 
                         <a href="{{ url('/admin/riwayat') }}"
-                           class="btn btn-primary">
+                           class="btn btn-secondary">
                             Kelola Riwayat
                         </a>
                     </div>
@@ -83,7 +83,7 @@
                         </p>
 
                         <a href="{{ url('/petugas/peminjaman') }}"
-                           class="btn btn-success">
+                           class="btn btn-primary">
                             Kelola Peminjaman
                         </a>
                     </div>
@@ -98,7 +98,7 @@
                         </p>
 
                         <a href="{{ url('/petugas/riwayat') }}"
-                           class="btn btn-primary">
+                           class="btn btn-secondary">
                             Kelola Riwayat
                         </a>
                     </div>
